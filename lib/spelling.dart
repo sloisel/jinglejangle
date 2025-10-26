@@ -1,4 +1,3 @@
-// @dart=2.9
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'gameboard.dart';
@@ -8,6 +7,8 @@ import 'dart:async';
 
 
 class Spelling extends StatefulWidget {
+  const Spelling({Key? key}) : super(key: key);
+
   @override
   SpellingState createState() => SpellingState();
 }
@@ -43,8 +44,8 @@ class SpellingState extends State<Spelling> {
   @override
   void dispose() {
     super.dispose();
-    if(finaltimer!=null) finaltimer.cancel();
-    if(hinter!=null) hinter.cancel();
+    finaltimer.cancel();
+    hinter.cancel();
   }
 
   SpellingState() {
@@ -52,10 +53,12 @@ class SpellingState extends State<Spelling> {
   }
   void genQuestion() {
     madeError = false;
-    var cs = List<double>(scores.length);
-    final P = (x) => pow(maxScore-x,2.0);
+    var cs = List<double>.filled(scores.length, 0.0);
+    num P(x) => pow(maxScore-x,2.0);
     cs[0] = P(scores[0]);
-    for (var p=1;p<scores.length;p++) cs[p] = cs[p-1]+P(scores[p]);
+    for (var p=1;p<scores.length;p++) {
+      cs[p] = cs[p-1]+P(scores[p]);
+    }
     final foo = cs[scores.length-1]>0?rng.nextDouble()*cs[scores.length-1]:-1.0;
     questionNumber = cs.indexWhere((e) => e>foo);
     question = tileset[questionNumber];
@@ -65,8 +68,9 @@ class SpellingState extends State<Spelling> {
     }
     solution = foz;
     if(titleHint) { title=question; }
-    if(cs[scores.length-1]>0) say(question+'.',language:language);
-    else {
+    if(cs[scores.length-1]>0) {
+      say('$question.',language:language);
+    } else {
       player.play('SMALL_CROWD_APPLAUSE-Yannick_Lemieux-recompressed.mp3',volume: 0.2);
       player.play('joy.mp3',volume: 0.2);
       finaltimer = Timer(Duration(milliseconds: 500), () {
@@ -101,12 +105,12 @@ class SpellingState extends State<Spelling> {
   void startTurn() {
     highlight = false;
     turnStart = DateTime.now();
-    hinter?.cancel();
+    hinter.cancel();
     hinter = Timer(Duration(seconds: maxtime), () {
       highlight = true; gaveHint = true; setState(() {}); });
   }
   String getAnswer() {
-    return (titleHint?(question+"="):"")+answer;
+    return (titleHint?("$question="):"")+answer;
   }
   void press(key) {
     print(key);
@@ -163,7 +167,7 @@ class SpellingState extends State<Spelling> {
             yrep = H-0.9*2*keyH;
             barW = W;
           }
-          var keys = List<Widget>(totl+3);
+          var keys = List<Widget?>.filled(totl+3, null);
           var count = 0;
           final textW = W-keyW;
           final mysizes = textsizes.where((e) => e<textW/10).toList();
@@ -209,13 +213,13 @@ class SpellingState extends State<Spelling> {
                     icon: Icon(Icons.announcement,size: 1*keyW),
                     color: Colors.white,
                     onPressed: () {
-                      say(question+'.',language:language);
+                      say('$question.',language:language);
                     },
                   ),
                 ),
                 //),
               ));
-          final foo = answers.join("\n")+"\n"+getAnswer()+"_";
+          final foo = "${answers.join("\n")}\n${getAnswer()}_";
           print(foo);
           keys[count+1] = Positioned(
               left: textX,

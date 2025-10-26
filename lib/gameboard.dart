@@ -1,8 +1,6 @@
-// @dart=2.9
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'mysound.dart';
 import 'package:flutter/scheduler.dart';
@@ -12,18 +10,18 @@ final textsizes = <double>[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22
 enum TtsState { playing, stopped }
 
 Widget makeButton({
-  @required String text,
-  @required Function onpress,
-  @required double width,
-  @required double height,
-  @required double x,
-  @required double y,
-  double marginLeft: 5,
-  double marginRight: 5,
-  double marginTop: 5,
-  double marginBottom: 5,
-  Color color: Colors.grey,
-  String fontFamily: "Roboto"
+  required String text,
+  required Function onpress,
+  required double width,
+  required double height,
+  required double x,
+  required double y,
+  double marginLeft = 5,
+  double marginRight = 5,
+  double marginTop = 5,
+  double marginBottom = 5,
+  Color color = Colors.grey,
+  String fontFamily = "Roboto"
 }) {
   return Positioned(
       left: x + marginLeft,
@@ -31,13 +29,15 @@ Widget makeButton({
       child: SizedBox(
           width: width - marginLeft - marginRight,
           height: height - marginTop - marginBottom,
-          child: RaisedButton(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(height/5),
-                side: BorderSide(color: Colors.blue)
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(height/5),
+                  side: const BorderSide(color: Colors.blue)
+              ),
             ),
-            onPressed: onpress,
-            color: color,
+            onPressed: onpress as void Function()?,
             child: Center(
                 child: AutoSizeText(
                   text,
@@ -57,34 +57,34 @@ class Tile {
 
 
 class GameBoard extends StatefulWidget {
+  const GameBoard({Key? key}) : super(key: key);
+
   @override
   GameBoardState createState() => GameBoardState();
 }
 
 
 class GameBoardState extends State<GameBoard> {
-  Timer finaltimer;
-  List tileset,oldtileset,hints;
-  Map args;
-  Map homonyms;
-  List<int> score;
-  double H, W, oldH, oldW;
-  double wtile, htile;
-  double pad;
-  List<List<Tile>> tiles;
-  int rows, cols, ntiles, lastdt=0,numTiles=10;
+  Timer? finaltimer;
+  List? tileset, oldtileset, hints;
+  Map? args;
+  Map? homonyms;
+  List<int>? score;
+  double? H, W, oldH, oldW;
+  double? wtile, htile;
+  double? pad;
+  List<List<Tile?>>? tiles;
+  int? rows, cols, ntiles, questionNumber;
+  int lastdt=0, numTiles=10;
   String gametitle = "";
-  List<Widget> tilesW;
-  String question;
-  String language;
-  int questionNumber;
-  DateTime time, oldtime, turnStart;
-  bool madeError, titleHint;
-  Random rng;
-  double elapsed;
+  List<Widget>? tilesW;
+  String? question, language, fontFamily;
+  DateTime? time, oldtime, turnStart;
+  bool? madeError, titleHint;
+  Random? rng;
+  double? elapsed;
   final blinktime = 12;
   final fasttime = 6;
-  String fontFamily;
 
   void setTiles(Map args) {
     if(args==this.args) return;
@@ -93,14 +93,16 @@ class GameBoardState extends State<GameBoard> {
     List hints = args['hints'];
     Map homonyms = args['homonyms'];
     fontFamily = args["fontChoice"];
-    this.tileset = tiles;
+    tileset = tiles;
     this.hints = hints;
     this.homonyms = homonyms;
-    this.titleHint = args['titleHint'];
-    this.numTiles = args['numTiles'];
-    this.language = args['language'];
-    score = List<int>(tiles.length);
-    for (var k = 0; k < score.length; k++) score[k] = 0;
+    titleHint = args['titleHint'];
+    numTiles = args['numTiles'];
+    language = args['language'];
+    score = List<int>.filled(tiles.length, 0);
+    for (var k = 0; k < score.length; k++) {
+      score[k] = 0;
+    }
   }
 
   GameBoardState() {
@@ -119,7 +121,7 @@ class GameBoardState extends State<GameBoard> {
     if(finaltimer!=null) finaltimer.cancel();
   }
 
-  doPhysics() {
+  void doPhysics() {
     final g = htile * 50.0;
     time = DateTime.now();
     final dt = min(time.difference(oldtime).inMicroseconds / 1000000.0, 0.5);
@@ -144,7 +146,7 @@ class GameBoardState extends State<GameBoard> {
   }
 
   void givehint() {
-    say(titleHint?gametitle:question,language:this.language);
+    say(titleHint?gametitle:question,language:language);
   }
 
   bool boardvalid() => (tiles != null &&
@@ -153,16 +155,20 @@ class GameBoardState extends State<GameBoard> {
       })));
 
   void clearboard() {
-    tiles = List<List<Tile>>(cols);
-    for (var j = 0; j < cols; j++) tiles[j] = List<Tile>(rows);
+    tiles = List<List<Tile?>>.filled(cols, []);
+    for (var j = 0; j < cols; j++) {
+      tiles[j] = List<Tile?>.filled(rows, null);
+    }
   }
 
   void genboard() {
     if (!tileset.contains(question)) {
-      var cs = List<double>(score.length);
-      final P = (x) => pow(4.0-x,2);
+      var cs = List<double>.filled(score.length, 0.0);
+      num P(x) => pow(4.0-x,2);
       cs[0] = P(score[0]);
-      for (var p=1;p<score.length;p++) cs[p] = cs[p-1]+P(score[p]);
+      for (var p=1;p<score.length;p++) {
+        cs[p] = cs[p-1]+P(score[p]);
+      }
       final foo = cs[score.length-1]>0?rng.nextDouble()*cs[score.length-1]:-1.0;
       questionNumber = cs.indexWhere((e) => e>foo);
       question = tileset[questionNumber];
@@ -170,8 +176,9 @@ class GameBoardState extends State<GameBoard> {
 
       turnStart = DateTime.now();
       madeError = false;
-      if(cs[score.length-1]>0) givehint();
-      else {
+      if(cs[score.length-1]>0) {
+        givehint();
+      } else {
         player.play('SMALL_CROWD_APPLAUSE-Yannick_Lemieux-recompressed.mp3',volume: 0.2);
         player.play('joy.mp3',volume: 0.2);
         finaltimer = Timer(Duration(milliseconds: 500), () {
@@ -205,8 +212,12 @@ class GameBoardState extends State<GameBoard> {
       updateElapsed();
       final points = madeError || elapsed>blinktime?0:(elapsed<fasttime?2:1);
       score[questionNumber] = min(4, score[questionNumber] + points);
-      for (var p = 0; p < cols; p++) tiles[p][j] = null;
-      for (var p = 0; p < rows; p++) tiles[k][p] = null;
+      for (var p = 0; p < cols; p++) {
+        tiles[p][j] = null;
+      }
+      for (var p = 0; p < rows; p++) {
+        tiles[k][p] = null;
+      }
       question = "";
       genboard();
     } else {
@@ -222,7 +233,7 @@ class GameBoardState extends State<GameBoard> {
     setTiles(foo);
     SchedulerBinding.instance.addPostFrameCallback((_) { setState(() {}); });
     return SafeArea(child: Scaffold(
-      appBar: AppBar(title: Text("$gametitle", style: TextStyle(fontSize: 30.0),)),
+      appBar: AppBar(title: Text(gametitle, style: TextStyle(fontSize: 30.0),)),
       body:
       LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
         H = constraints.maxHeight;
@@ -254,7 +265,7 @@ class GameBoardState extends State<GameBoard> {
         }
         doPhysics();
         updateElapsed();
-        var t = List<Widget>(ntiles + 2);
+        var t = List<Widget?>.filled(ntiles + 2, null);
         for (var j = 0; j < rows; j++)
           for (var k = 0; k < cols; k++) {
             final color = elapsed>30 && (elapsed%1)<0.1 && isCorrect(tiles[k][j].label) ? Colors.yellowAccent : Colors.white;

@@ -1,39 +1,39 @@
-// @dart=2.9
 import 'dart:math';
-import 'mysound.dart';
 
 Map<String,int> makeHomonyms(
     List<List<String>> homonyms_,
     Map<String,int> H
     ) {
-  H ??= Map<String,int>();
-  if(homonyms_==null || homonyms_.length==0) return H;
+  H ??= <String,int>{};
+  if(homonyms_.isEmpty) return H;
   var homonyms = List<List<String>>();
   H.forEach((k,v) {
-    while(homonyms.length<=v) homonyms.add(List<String>());
+    while(homonyms.length<=v) {
+      homonyms.add(List<String>.filled(, ""));
+    }
     homonyms[v].add(k);
   });
   homonyms.addAll(homonyms_);
-  H = Map<String,int>();
+  H = <String,int>{};
   for(var j=0;j<homonyms.length;j++)
   {
     final h=homonyms[j];
     int b=j;
-    Set<int> mods = Set<int>();
+    Set<int> mods = <int>{};
     mods.add(b);
-    h.forEach((x) {
+    for (var x in h) {
       if(H.containsKey(x)) {
         if(H[x]!=b) {
           mods.add(max(b,H[x]));
           b = min(b,H[x]);
         }
       }
-    });
+    }
     mods.add(j);
-    mods.forEach((k) {
+    for (var k in mods) {
       final w = homonyms[k];
-      w.forEach((x) { H[x] = b; });
-    });
+      for (var x in w) { H[x] = b; }
+    }
   }
   return H;
 }
@@ -50,7 +50,7 @@ Map<String,dynamic> fixprobset2(Map<String,dynamic> P,
   var baz = List<List<String>>();
   var boo = foo["homonyms"] ?? [];
   for(var k=0;k<boo.length;k++) {
-    var bak = List<String>();
+    var bak = List<String>.filled(, "");
     bak.addAll(boo[k].cast<String>());
     baz.add(bak);
   }
@@ -60,7 +60,7 @@ Map<String,dynamic> fixprobset2(Map<String,dynamic> P,
     if(!x.containsKey(z)) x[z] = w;
     if(y.containsKey(z)) return;
     y[z] = x[z];
-  };
+  }
   if(foo.containsKey("children")) {
     var Q = List<Map<String,dynamic>>.from(foo["children"]);
     for(var k=0; k<Q.length;k++) {

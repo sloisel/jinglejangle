@@ -1,9 +1,6 @@
-// @dart=2.9
 import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert';
 import 'gameboard.dart';
 
 const hiragana = ["あ","い","う","え","お",
@@ -63,22 +60,22 @@ const katakana = ["ア","イ","ウ","エ","オ",
   "ピャ","ピュ","ピョ"];
 
 class Speaker implements Function {
-  FlutterTts flutterTts;
+  FlutterTts? flutterTts;
   dynamic languages;
   final isLatin = RegExp(r"^[\000-\377]*$");
   final isJapanese = RegExp(r"^([一-龠]|[ぁ-ゔ]|[ァ-ヴー]|[ａ-ｚＡ-Ｚ０-９]|[々〆〤])*$");
-  String language;
+  String? language;
   double volume = 1.0;
   double pitch = 1.0;
   double rate = 0.5;
   bool initialized = false;
   dynamic voices;
   TtsState ttsState = TtsState.stopped;
-  get isPlaying => ttsState == TtsState.playing;
+  bool get isPlaying => ttsState == TtsState.playing;
 
-  get isStopped => ttsState == TtsState.stopped;
+  bool get isStopped => ttsState == TtsState.stopped;
 
-  initTts() {
+  void initTts() {
     if(initialized) return;
     initialized = true;
     flutterTts = FlutterTts();
@@ -109,11 +106,11 @@ class Speaker implements Function {
 
   Future call(text, {language = "default"}) async {
     if(hiragana.contains(text)) {
-      player.play('marina/${hiragana.indexOf(text)}.mp3');
+      await player.play('marina/${hiragana.indexOf(text)}.mp3');
       return;
     }
     if(katakana.contains(text)) {
-      player.play('marina/${katakana.indexOf(text)}.mp3');
+      await player.play('marina/${katakana.indexOf(text)}.mp3');
       return;
     }
 //    final lang=isLatin.hasMatch(text)?"en-US":"ja-JP";
@@ -121,45 +118,54 @@ class Speaker implements Function {
     print(lang);
     print(text);
     initTts();
-    await flutterTts.setLanguage(lang);
-    await flutterTts.setVolume(volume);
-    await flutterTts.setSpeechRate(rate);
-    await flutterTts.setPitch(pitch);
+    await flutterTts!.setLanguage(lang);
+    await flutterTts!.setVolume(volume);
+    await flutterTts!.setSpeechRate(rate);
+    await flutterTts!.setPitch(pitch);
 
-    var result = await flutterTts.speak(text);
+    var result = await flutterTts!.speak(text);
     if (result == 1) ttsState = TtsState.playing;
   }
 
   Future _stop() async {
-    var result = await flutterTts.stop();
+    var result = await flutterTts!.stop();
     if (result == 1) ttsState = TtsState.stopped;
   }
 }
 
 var say = Speaker();
-//AudioCache ac = AudioCache();
 
-class SoundFX extends AudioCache {
-  List<String> mp3Paths;
-  bool do_init = true;
-//  void play(String filename, {double volume: 1.0}) async {
-  void init() async {
-    if(do_init) {
-      do_init=false;
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+class SoundFX {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _initialized = false;
 
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+  Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
 
-      mp3Paths = manifestMap.keys
-          .where((String key) => key.contains('.mp3'))
-          .map((s) => s.substring("assets/".length))
-          .toList();
-      print('Preloading:');
-      print(mp3Paths);
-      loadAll(mp3Paths);
+    // Set audio mode for iOS
+    await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+  }
+
+  Future<void> play(String filename, {double volume = 1.0}) async {
+    await init();
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.setVolume(volume);
+      await _audioPlayer.play(AssetSource(filename));
+    } catch (e) {
+      print('Error playing audio $filename: $e');
     }
-//    ac.play(filename);
+  }
+
+  Future<void> stop() async {
+    await _audioPlayer.stop();
+  }
+
+  void dispose() {
+    _audioPlayer.dispose();
   }
 }
+
 var player = SoundFX();
 

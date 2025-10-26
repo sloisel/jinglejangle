@@ -1,4 +1,3 @@
-// @dart=2.9
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'dart:async';
@@ -10,7 +9,7 @@ import 'probloader.dart';
 
 
 class PreGame extends StatefulWidget {
-  PreGame({Key key}) : super(key: key);
+  const PreGame({Key key}) : super(key: key);
 
   @override
   PreGameState createState() => PreGameState();
@@ -56,7 +55,7 @@ class PreGameState extends State<PreGame> {
         );
       }
     }
-    var w = List<Widget>(tileset.length);
+    var w = List<Widget?>.filled(tileset.length, null);
     for(var k=0;k<tileset.length;k++) {
       w[k] = Container(
           padding: const EdgeInsets.all(8),
@@ -89,27 +88,31 @@ class PreGameState extends State<PreGame> {
         onPressed: () {
           Navigator.popAndPushNamed(context, nav, arguments: args);
         },
-        child: Icon(Icons.arrow_forward_ios),
         backgroundColor: Colors.green,
+        child: Icon(Icons.arrow_forward_ios),
       ),
-      bottomNavigationBar: L.length>0?BottomAppBar(child: IntrinsicHeight(child: Column(children: L))):null,
+      bottomNavigationBar: L.isNotEmpty?BottomAppBar(child: IntrinsicHeight(child: Column(children: L))):null,
     ));
   }
 }
 
 class Win extends StatefulWidget {
+  const Win({Key? key}) : super(key: key);
+
   @override
   WinState createState() => WinState();
 }
 
 class WinState extends State<Win> {
   Timer finish;
+  @override
   void dispose() {
     super.dispose();
-    finish?.cancel();
+    finish.cancel();
   }
+  @override
   Widget build(BuildContext context) {
-    if(finish==null) finish=Timer(Duration(seconds: 7), () {
+    finish ??= Timer(Duration(seconds: 7), () {
       Navigator.pop(context);
     });
     return Scaffold(
@@ -123,6 +126,8 @@ class WinState extends State<Win> {
 }
 
 class Selector extends StatefulWidget {
+  const Selector({Key? key}) : super(key: key);
+
   @override
   SelectorState createState() => SelectorState();
 }
@@ -142,8 +147,6 @@ class SelectorState extends State<Selector> {
     }
     say.initTts();
     player.init();
-    if(problemset==null)
-      return Scaffold(appBar: AppBar(title: Text("Loading...")));
     final Map foo = (ModalRoute.of(context).settings.arguments) ?? problemset;
     String name = foo["name"];
     final entries = List<String>.from(foo["children"].map((x)=>x["name"]));
@@ -178,7 +181,7 @@ class SelectorState extends State<Selector> {
                 }
               },
               color: Colors.white,
-              child: Align(child: theText,alignment: Alignment.centerLeft),/*AutoSizeText(
+              child: Align(alignment: Alignment.centerLeft, child: theText),/*AutoSizeText(
                     entries[index],
                     presetFontSizes: textsizes,
                     textAlign: TextAlign.center,
