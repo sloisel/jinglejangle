@@ -65,23 +65,25 @@ class PreGameState extends State<PreGame> {
       w[k] = Container(
           padding: const EdgeInsets.all(8),
           height:60,
-          child: ActionChip(
-            elevation: 6.0,
-            padding: const EdgeInsets.only(left: 20, right:20 ),
-//        avatar: CircleAvatar(child: Icon(Icons.announcement)),
-            label: AutoSizeText(
+          child: ElevatedButton(
+            onPressed: (() => say(tileset[k])),
+            style: ElevatedButton.styleFrom(
+              elevation: 6.0,
+              padding: const EdgeInsets.only(left: 20, right:20 ),
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              shape: const StadiumBorder(
+                  side: BorderSide(
+                    width: 1,
+                    color: Colors.blueAccent,
+                  )),
+            ),
+            child: AutoSizeText(
               tileset[k],
               presetFontSizes: textsizes,
               textAlign: TextAlign.center,
               style: const TextStyle(fontFamily: "Roboto"),
             ),
-            onPressed: (() => say(tileset[k])),
-            backgroundColor: Colors.white,
-            shape: StadiumBorder(
-                side: BorderSide(
-                  width: 1,
-                  color: Colors.blueAccent,
-                )),
           ));
     }
 //    L[0] = Wrap(children: w);
@@ -96,7 +98,7 @@ class PreGameState extends State<PreGame> {
         backgroundColor: Colors.green,
         child: const Icon(Icons.arrow_forward_ios),
       ),
-      bottomNavigationBar: L.isNotEmpty?BottomAppBar(child: IntrinsicHeight(child: Column(children: L))):null,
+      bottomNavigationBar: L.isNotEmpty?BottomAppBar(child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: L))):null,
     ));
   }
 }
