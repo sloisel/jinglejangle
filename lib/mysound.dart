@@ -81,25 +81,25 @@ class Speaker implements Function {
     flutterTts = FlutterTts();
 
     _getLanguages();
-    flutterTts.setStartHandler(() {
+    flutterTts!.setStartHandler(() {
       print("Playing");
       ttsState = TtsState.playing;
     });
 
-    flutterTts.setCompletionHandler(() {
+    flutterTts!.setCompletionHandler(() {
       print("Complete");
       ttsState = TtsState.stopped;
     });
 
-    flutterTts.setErrorHandler((msg) {
+    flutterTts!.setErrorHandler((msg) {
       print("error: $msg");
       ttsState = TtsState.stopped;
     });
   }
 
   Future _getLanguages() async {
-    voices = await flutterTts.getVoices;
-    languages = await flutterTts.getLanguages;
+    voices = await flutterTts!.getVoices;
+    languages = await flutterTts!.getLanguages;
     if (languages != null) {
     }
   }

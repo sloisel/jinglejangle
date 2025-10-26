@@ -9,7 +9,7 @@ import 'probloader.dart';
 
 
 class PreGame extends StatefulWidget {
-  const PreGame({Key key}) : super(key: key);
+  const PreGame({Key? key}) : super(key: key);
 
   @override
   PreGameState createState() => PreGameState();
@@ -19,9 +19,9 @@ class PreGameState extends State<PreGame> {
   int fontChoice = 0;
   @override
   Widget build(BuildContext context) {
-    Map args = (ModalRoute.of(context).settings.arguments);
-    List tileset;
-    String nav;
+    Map args = (ModalRoute.of(context)?.settings.arguments ?? {}) as Map;
+    late List tileset;
+    late String nav;
     print("i love you");
     if(args.containsKey('tileset')) {
       tileset = args['tileset'];
@@ -34,8 +34,11 @@ class PreGameState extends State<PreGame> {
       print(args);
       tileset = args['arithmetic'];
       nav = "/Arithmetic";
-    } else { assert(false); }
-    String name=args['name'];
+    } else {
+      tileset = [];
+      nav = "/";
+    }
+    String name=args['name'] ?? '';
     final fc = args["fontChoices"];
     args["fontChoice"] = fc[fontChoice];
     List<Widget> L = []; //[Text("hi")];
@@ -43,32 +46,34 @@ class PreGameState extends State<PreGame> {
       for(var k=0;k<fc.length;++k) {
         L.add(
             RadioListTile<int>(
-              title: Text(fc[k],style: TextStyle(fontSize: 30)),
+              title: Text(fc[k],style: const TextStyle(fontSize: 30)),
               value: k,
               groupValue: fontChoice,
-              onChanged: (int value) {
-                fontChoice = value;
-                args["fontChoice"] = value;
-                setState(() { });
+              onChanged: (int? value) {
+                if (value != null) {
+                  fontChoice = value;
+                  args["fontChoice"] = value;
+                  setState(() { });
+                }
               },
             )
         );
       }
     }
-    var w = List<Widget?>.filled(tileset.length, null);
+    var w = List<Widget>.filled(tileset.length, Container());
     for(var k=0;k<tileset.length;k++) {
       w[k] = Container(
           padding: const EdgeInsets.all(8),
           height:60,
           child: ActionChip(
             elevation: 6.0,
-            padding: EdgeInsets.only(left: 20, right:20 ),
+            padding: const EdgeInsets.only(left: 20, right:20 ),
 //        avatar: CircleAvatar(child: Icon(Icons.announcement)),
             label: AutoSizeText(
               tileset[k],
               presetFontSizes: textsizes,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: args["fontChoice"]),
+              style: const TextStyle(fontFamily: "Roboto"),
             ),
             onPressed: (() => say(tileset[k])),
             backgroundColor: Colors.white,
@@ -89,7 +94,7 @@ class PreGameState extends State<PreGame> {
           Navigator.popAndPushNamed(context, nav, arguments: args);
         },
         backgroundColor: Colors.green,
-        child: Icon(Icons.arrow_forward_ios),
+        child: const Icon(Icons.arrow_forward_ios),
       ),
       bottomNavigationBar: L.isNotEmpty?BottomAppBar(child: IntrinsicHeight(child: Column(children: L))):null,
     ));
@@ -104,19 +109,19 @@ class Win extends StatefulWidget {
 }
 
 class WinState extends State<Win> {
-  Timer finish;
+  Timer? finish;
   @override
   void dispose() {
     super.dispose();
-    finish.cancel();
+    finish?.cancel();
   }
   @override
   Widget build(BuildContext context) {
-    finish ??= Timer(Duration(seconds: 7), () {
+    finish ??= Timer(const Duration(seconds: 7), () {
       Navigator.pop(context);
     });
     return Scaffold(
-      appBar: AppBar(title: Text("You Win!")),
+      appBar: AppBar(title: const Text("You Win!")),
       body:
       Center( child:
       Image.asset('assets/images/dancing.gif', fit: BoxFit.contain),
@@ -133,7 +138,7 @@ class Selector extends StatefulWidget {
 }
 
 class SelectorState extends State<Selector> {
-  Map problemset;
+  Map? problemset;
   bool requested = false;
   @override
   Widget build(BuildContext context) {
@@ -147,8 +152,14 @@ class SelectorState extends State<Selector> {
     }
     say.initTts();
     player.init();
-    final Map foo = (ModalRoute.of(context).settings.arguments) ?? problemset;
-    String name = foo["name"];
+    if (problemset == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Loading...")),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    final Map foo = (ModalRoute.of(context)?.settings.arguments ?? problemset) as Map;
+    String name = foo["name"] ?? "";
     final entries = List<String>.from(foo["children"].map((x)=>x["name"]));
     final routenames = (
         List<String>.from(foo["children"].map((x) {
@@ -164,14 +175,17 @@ class SelectorState extends State<Selector> {
         padding: const EdgeInsets.all(8),
         itemCount: entries.length,
         itemBuilder: (BuildContext context, int index) {
-          final theText = (Text(entries[index],style: routenames[index]==''?TextStyle(fontSize:25,fontWeight: FontWeight.bold,color: Colors.blue):TextStyle(fontSize:18), overflow: TextOverflow.ellipsis));
+          final theText = (Text(entries[index],style: routenames[index]==''?const TextStyle(fontSize:25,fontWeight: FontWeight.bold,color: Colors.blue):const TextStyle(fontSize:18), overflow: TextOverflow.ellipsis));
           return Container(
             margin: const EdgeInsets.only(top: 10.0),
             height: 50,
-            child: routenames[index]==''?Center(child:theText):Center(child: RaisedButton(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.blue)
+            child: routenames[index]==''?Center(child:theText):Center(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: const BorderSide(color: Colors.blue)
+                ),
               ),
               onPressed: () {
                 if(routenames[index]!='') {
@@ -180,7 +194,6 @@ class SelectorState extends State<Selector> {
                       arguments: routeargs[index]);
                 }
               },
-              color: Colors.white,
               child: Align(alignment: Alignment.centerLeft, child: theText),/*AutoSizeText(
                     entries[index],
                     presetFontSizes: textsizes,

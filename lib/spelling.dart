@@ -15,49 +15,50 @@ class Spelling extends StatefulWidget {
 
 
 class SpellingState extends State<Spelling> {
-  double H,W,keyW,keyH;
-  List<String> tileset;
-  List<int> scores;
+  late double H,W,keyW,keyH;
+  late List<String> tileset;
+  late List<int> scores;
   int maxScore = 1;
-  int maxTileLength;
-  String question, solution;
-  int questionNumber;
-  String answer;
+  late int maxTileLength;
+  late String question, solution;
+  late int questionNumber;
+  String answer = "";
   String title="";
-  Map decrypt;
-  List<String> answers;
-  List<String> solutions;
+  late Map decrypt;
+  late List<String> answers;
+  late List<String> solutions;
   bool titleHint = false;
-  bool madeError;
-  String language;
+  late bool madeError;
+  late String language;
   final maxAnswersLength = 1;
   List<String> rows = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
-  Random rng;
-  Map oldargs;
-  Timer finaltimer, hinter;
-  DateTime turnStart;
+  late Random rng;
+  Map? oldargs;
+  Timer? finaltimer, hinter;
+  late DateTime turnStart;
   int maxtime = 30;
   bool highlight = false;
   bool gaveHint = false;
-  double keyboardshift;
+  late double keyboardshift;
 
   @override
   void dispose() {
     super.dispose();
-    finaltimer.cancel();
-    hinter.cancel();
+    finaltimer?.cancel();
+    hinter?.cancel();
   }
 
   SpellingState() {
     rng = Random();
   }
+  
   void genQuestion() {
     madeError = false;
     var cs = List<double>.filled(scores.length, 0.0);
     num P(x) => pow(maxScore-x,2.0);
-    cs[0] = P(scores[0]);
+    cs[0] = P(scores[0]).toDouble();
     for (var p=1;p<scores.length;p++) {
-      cs[p] = cs[p-1]+P(scores[p]);
+      cs[p] = cs[p-1]+P(scores[p]).toDouble();
     }
     final foo = cs[scores.length-1]>0?rng.nextDouble()*cs[scores.length-1]:-1.0;
     questionNumber = cs.indexWhere((e) => e>foo);
@@ -73,7 +74,7 @@ class SpellingState extends State<Spelling> {
     } else {
       player.play('SMALL_CROWD_APPLAUSE-Yannick_Lemieux-recompressed.mp3',volume: 0.2);
       player.play('joy.mp3',volume: 0.2);
-      finaltimer = Timer(Duration(milliseconds: 500), () {
+      finaltimer = Timer(const Duration(milliseconds: 500), () {
         Navigator.popAndPushNamed(context, "/Win");
       });
     }
@@ -81,6 +82,7 @@ class SpellingState extends State<Spelling> {
     startTurn();
     gaveHint = false;
   }
+  
   void setTiles(Map args) {
     if(args==oldargs) return;
     oldargs = args;
@@ -97,55 +99,59 @@ class SpellingState extends State<Spelling> {
       solutions = tileset;
     }
     scores = tileset.map((e) => 0).toList();
-    List<int> tilelens = tileset.map((e) => e.length).toList().cast<int>();
+    List<int> tilelens = tileset.map((e) => e.length).toList();
     maxTileLength = tilelens.reduce((e,v) => max(e,v));
-    answers = List<String>.generate(maxAnswersLength, (index) => '');
+    answers = List<String>.filled(maxAnswersLength, '');
     genQuestion();
   }
+  
   void startTurn() {
     highlight = false;
     turnStart = DateTime.now();
-    hinter.cancel();
+    hinter?.cancel();
     hinter = Timer(Duration(seconds: maxtime), () {
       highlight = true; gaveHint = true; setState(() {}); });
   }
+  
   String getAnswer() {
-    return (titleHint?("$question="):"")+answer;
+    return (titleHint?"$question=":"")+answer;
   }
+  
   void press(key) {
     print(key);
     print(solution);
-    print(solution[answer.length]);
-    if(key==solution[answer.length].toUpperCase()) {
-      startTurn();
-      answer = answer+solution[answer.length];
-      if(answer.length == solution.length) {
-        answers = answers.sublist(1); answers.add(getAnswer());
-/*        if(answers.length > maxAnswersLength)
-          answers = answers.sublist(answers.length-maxAnswersLength);*/
-        if(!madeError) {
-          scores[questionNumber] = min(scores[questionNumber] + (gaveHint?0:1),maxScore);
+    if (answer.length < solution.length) {
+      print(solution[answer.length]);
+      if(key==solution[answer.length].toUpperCase()) {
+        startTurn();
+        answer = answer+solution[answer.length];
+        if(answer.length == solution.length) {
+          answers = answers.sublist(1);
+          answers.add(getAnswer());
+          if(!madeError) {
+            scores[questionNumber] = min(scores[questionNumber] + (gaveHint?0:1),maxScore);
+          }
+          genQuestion();
         }
-        genQuestion();
+        setState(() {});
+      } else {
+        scores[questionNumber] = 0;
+        madeError = true;
+        player.play('fail-buzzer-01.mp3');
+        setState(() {});
       }
-      setState(() {});
-    } else {
-      scores[questionNumber] = 0;
-      madeError = true;
-      player.play('fail-buzzer-01.mp3');
-      setState(() {});
     }
   }
+  
   @override
   Widget build(BuildContext context) {
-    Map foo = (ModalRoute.of(context).settings.arguments);
+    Map foo = (ModalRoute.of(context)?.settings.arguments ?? {}) as Map;
     setTiles(foo);
     final lens = rows.map((e) => e.length).toList();
     final maxl = lens.reduce((v,e) => max(v,e));
     final totl = lens.reduce((v,e) => v+e);
     return SafeArea(child: Scaffold(
         appBar: AppBar(title: Text(title)),
-//        appBar: AppBar(title: Text("hello, world $maxl")),
         body:
         LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
           H = constraints.maxHeight;
@@ -167,7 +173,7 @@ class SpellingState extends State<Spelling> {
             yrep = H-0.9*2*keyH;
             barW = W;
           }
-          var keys = List<Widget?>.filled(totl+3, null);
+          var keys = List<Widget>.filled(totl+3, Container());
           var count = 0;
           final textW = W-keyW;
           final mysizes = textsizes.where((e) => e<textW/10).toList();
@@ -175,7 +181,7 @@ class SpellingState extends State<Spelling> {
           for(var j=0;j<rows.length;j++) {
             var rj = rows[j];
             for (var k = 0; k < rj.length; k++) {
-              final color = highlight&&rj[k]==solution[answer.length].toUpperCase()?Colors.lightBlueAccent:Colors.white;
+              final color = (highlight && answer.length < solution.length && rj[k]==solution[answer.length].toUpperCase())?Colors.lightBlueAccent:Colors.white;
               keys[count] = makeButton(
                   text: rj[k],
                   onpress: () { press(rj[k]); },
@@ -202,8 +208,6 @@ class SpellingState extends State<Spelling> {
               child: SizedBox(
                 width: 2*keyW*0.8,
                 height: 2*keyH*0.8,
-//                child: Material(
-                //child: Center(
                 child: Ink(
                   decoration: const ShapeDecoration(
                     color: Colors.lightGreen,
@@ -217,7 +221,6 @@ class SpellingState extends State<Spelling> {
                     },
                   ),
                 ),
-                //),
               ));
           final foo = "${answers.join("\n")}\n${getAnswer()}_";
           print(foo);
@@ -237,16 +240,14 @@ class SpellingState extends State<Spelling> {
               child: SizedBox(
                   width: barW,
                   height: barH,
-//                child: Material(
                   child: Container(
                       margin: const EdgeInsets.all(2.0),
-//                    padding: const EdgeInsets.all(3.0),
                       decoration: BoxDecoration(
                           border: Border.all(color: Colors.blueAccent)
                       ),
                       child: LinearProgressIndicator(
                         value: S,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.lightGreenAccent),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.lightGreenAccent),
                         backgroundColor: Colors.white,
                       ))));
           return Stack(children: keys);

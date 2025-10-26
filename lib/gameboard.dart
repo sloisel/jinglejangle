@@ -66,23 +66,31 @@ class GameBoard extends StatefulWidget {
 
 class GameBoardState extends State<GameBoard> {
   Timer? finaltimer;
-  List? tileset, oldtileset, hints;
-  Map? args;
-  Map? homonyms;
-  List<int>? score;
-  double? H, W, oldH, oldW;
-  double? wtile, htile;
-  double? pad;
-  List<List<Tile?>>? tiles;
-  int? rows, cols, ntiles, questionNumber;
+  late List tileset;
+  List? oldtileset;
+  late List hints;
+  late Map args;
+  late Map homonyms;
+  late List<int> score;
+  late double H, W;
+  double oldH = 0, oldW = 0;
+  late double wtile, htile;
+  late double pad;
+  late List<List<Tile?>> tiles;
+  late int rows, cols, ntiles;
+  int? questionNumber;
   int lastdt=0, numTiles=10;
   String gametitle = "";
-  List<Widget>? tilesW;
-  String? question, language, fontFamily;
-  DateTime? time, oldtime, turnStart;
-  bool? madeError, titleHint;
-  Random? rng;
-  double? elapsed;
+  late List<Widget> tilesW;
+  String question = "";
+  late String language;
+  late String fontFamily;
+  late DateTime time, oldtime;
+  DateTime? turnStart;
+  late bool madeError;
+  late bool titleHint;
+  late Random rng;
+  double elapsed = 0;
   final blinktime = 12;
   final fasttime = 6;
 
@@ -100,25 +108,20 @@ class GameBoardState extends State<GameBoard> {
     numTiles = args['numTiles'];
     language = args['language'];
     score = List<int>.filled(tiles.length, 0);
-    for (var k = 0; k < score.length; k++) {
-      score[k] = 0;
-    }
   }
 
   GameBoardState() {
     args = {};
-    setTiles({'tileset': ["1","2","3","4","5"],'homonyms': {}});
-    oldH = oldW = 0;
+    setTiles({'tileset': ["1","2","3","4","5"],'homonyms': {},'hints':["1","2","3","4","5"],'fontChoice':'Roboto','titleHint':false,'numTiles':10,'language':'en'});
     oldtime = DateTime.now();
     rng = Random();
-    question = "";
   }
 
 
   @override
   void dispose() {
     super.dispose();
-    if(finaltimer!=null) finaltimer.cancel();
+    finaltimer?.cancel();
   }
 
   void doPhysics() {
@@ -129,17 +132,18 @@ class GameBoardState extends State<GameBoard> {
     oldtime = time;
     for (var j = 0; j < tiles.length; j++) {
       var t0 = tiles[j];
-      t0.sort((a, b) => b.y.compareTo(a.y));
+      t0.sort((a, b) => (b?.y ?? 0).compareTo(a?.y ?? 0));
       for (var k = 0; k < t0.length; k++) {
-        t0[k].dy += dt * g;
-        t0[k].y += dt * t0[k].dy;
+        if (t0[k] == null) continue;
+        t0[k]!.dy += dt * g;
+        t0[k]!.y += dt * t0[k]!.dy;
         var maxy = H - (pad + 1) * htile;
-        if (k > 0) {
-          maxy = min(maxy, t0[k - 1].y - htile);
+        if (k > 0 && t0[k - 1] != null) {
+          maxy = min(maxy, t0[k - 1]!.y - htile);
         }
-        if (t0[k].y >= maxy) {
-          t0[k].y = maxy;
-          t0[k].dy = 0;
+        if (t0[k]!.y >= maxy) {
+          t0[k]!.y = maxy;
+          t0[k]!.dy = 0;
         }
       }
     }
@@ -149,10 +153,7 @@ class GameBoardState extends State<GameBoard> {
     say(titleHint?gametitle:question,language:language);
   }
 
-  bool boardvalid() => (tiles != null &&
-      tiles.any((e) => e.any((f) {
-        return question == f.label;
-      })));
+  bool boardvalid() => tiles.any((e) => e.any((f) => question == (f?.label ?? '')));
 
   void clearboard() {
     tiles = List<List<Tile?>>.filled(cols, []);
@@ -165,14 +166,14 @@ class GameBoardState extends State<GameBoard> {
     if (!tileset.contains(question)) {
       var cs = List<double>.filled(score.length, 0.0);
       num P(x) => pow(4.0-x,2);
-      cs[0] = P(score[0]);
+      cs[0] = P(score[0]).toDouble();
       for (var p=1;p<score.length;p++) {
-        cs[p] = cs[p-1]+P(score[p]);
+        cs[p] = cs[p-1]+P(score[p]).toDouble();
       }
       final foo = cs[score.length-1]>0?rng.nextDouble()*cs[score.length-1]:-1.0;
       questionNumber = cs.indexWhere((e) => e>foo);
-      question = tileset[questionNumber];
-      if(titleHint) { gametitle = hints[questionNumber]; }
+      question = tileset[questionNumber!];
+      if(titleHint) { gametitle = hints[questionNumber!]; }
 
       turnStart = DateTime.now();
       madeError = false;
@@ -181,7 +182,7 @@ class GameBoardState extends State<GameBoard> {
       } else {
         player.play('SMALL_CROWD_APPLAUSE-Yannick_Lemieux-recompressed.mp3',volume: 0.2);
         player.play('joy.mp3',volume: 0.2);
-        finaltimer = Timer(Duration(milliseconds: 500), () {
+        finaltimer = Timer(const Duration(milliseconds: 500), () {
           Navigator.popAndPushNamed(context, "/Win");
         });
       }
@@ -189,7 +190,7 @@ class GameBoardState extends State<GameBoard> {
     while (true) {
       for (var j = 0; j < cols; j++) {
         for (var k = 0; k < rows; k++) {
-          tiles[j][k] = tiles[j][k] ?? Tile(tileset[rng.nextInt(tileset.length)], j * wtile, -k * (htile * 1.5), 0);
+          tiles[j][k] = tiles[j][k] ?? Tile(tileset[rng.nextInt(tileset.length)], j * wtile.toDouble(), -k * (htile * 1.5), 0);
         }
       }
       if (boardvalid()) return;
@@ -199,7 +200,7 @@ class GameBoardState extends State<GameBoard> {
 
   void updateElapsed() {
     final time = DateTime.now();
-    elapsed = turnStart is DateTime?(time.difference(turnStart).inMicroseconds/1e6):10000;
+    elapsed = turnStart != null ? (time.difference(turnStart!).inMicroseconds/1e6):10000;
   }
 
   bool isCorrect(String text) {
@@ -207,11 +208,13 @@ class GameBoardState extends State<GameBoard> {
     final h2 = homonyms[question] ?? -2;
     return text==question || h1==h2;
   }
+  
   void press(int j, int k) {
-    if (isCorrect(tiles[k][j].label)) {
+    if (tiles[k][j] == null) return;
+    if (isCorrect(tiles[k][j]!.label)) {
       updateElapsed();
-      final points = madeError || elapsed>blinktime?0:(elapsed<fasttime?2:1);
-      score[questionNumber] = min(4, score[questionNumber] + points);
+      final points = (madeError || elapsed>blinktime)?0:((elapsed<fasttime)?2:1);
+      score[questionNumber!] = min(4, score[questionNumber!] + points);
       for (var p = 0; p < cols; p++) {
         tiles[p][j] = null;
       }
@@ -222,18 +225,18 @@ class GameBoardState extends State<GameBoard> {
       genboard();
     } else {
       madeError = true;
-      score[questionNumber] = 0;
+      score[questionNumber!] = 0;
       player.play('fail-buzzer-01.mp3');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    Map foo = (ModalRoute.of(context).settings.arguments);
+    Map foo = (ModalRoute.of(context)?.settings.arguments ?? {}) as Map;
     setTiles(foo);
     SchedulerBinding.instance.addPostFrameCallback((_) { setState(() {}); });
     return SafeArea(child: Scaffold(
-      appBar: AppBar(title: Text(gametitle, style: TextStyle(fontSize: 30.0),)),
+      appBar: AppBar(title: Text(gametitle, style: const TextStyle(fontSize: 30.0),)),
       body:
       LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
         H = constraints.maxHeight;
@@ -242,8 +245,9 @@ class GameBoardState extends State<GameBoard> {
           oldtileset = tileset;
           oldH = H;
           oldW = W;
-          final R = 3, N = numTiles, p = 1.5;
-          // The stuff below is obtained by solving: [c*w = W, (r+p)*h = H, c*r = N, w = R*h] for w,h,r,c
+          const R = 3;
+          final N = numTiles;
+          const p = 1.5;
           final disc = sqrt(4 * H * N * R * W + W * W * p * p) - W * p;
           final w = disc / (2 * N), h = disc / (2 * N * R);
           int cols0 = max((W / w).floor(), 2), rows0 = max((H / h - p).floor(), 2);
@@ -265,14 +269,15 @@ class GameBoardState extends State<GameBoard> {
         }
         doPhysics();
         updateElapsed();
-        var t = List<Widget?>.filled(ntiles + 2, null);
-        for (var j = 0; j < rows; j++)
+        var t = List<Widget>.filled(ntiles + 2, Container());
+        for (var j = 0; j < rows; j++) {
           for (var k = 0; k < cols; k++) {
-            final color = elapsed>30 && (elapsed%1)<0.1 && isCorrect(tiles[k][j].label) ? Colors.yellowAccent : Colors.white;
+            if (tiles[k][j] == null) continue;
+            final color = (elapsed>30 && (elapsed%1)<0.1 && isCorrect(tiles[k][j]!.label)) ? Colors.yellowAccent : Colors.white;
             t[j * cols + k] = makeButton(
-              text: tiles[k][j].label,
-              x: tiles[k][j].x,
-              y: tiles[k][j].y,
+              text: tiles[k][j]!.label,
+              x: tiles[k][j]!.x,
+              y: tiles[k][j]!.y,
               onpress: () {
                 press(j, k);
                 setState(() {});
@@ -283,14 +288,13 @@ class GameBoardState extends State<GameBoard> {
               fontFamily: fontFamily,
             );
           }
+        }
         t[ntiles] = Positioned(
             left: W - pad * htile*0.9,
             top: H - pad * htile*0.9,
             child: SizedBox(
               width: pad * htile*0.8,
               height: pad * htile*0.8,
-//                child: Material(
-              //child: Center(
               child: Ink(
                 decoration: const ShapeDecoration(
                   color: Colors.lightGreen,
@@ -304,7 +308,6 @@ class GameBoardState extends State<GameBoard> {
                   },
                 ),
               ),
-              //),
             ));
         final S = score.reduce((a, b) => a + b) / (4 * score.length);
         t[ntiles + 1] = Positioned(
@@ -313,21 +316,19 @@ class GameBoardState extends State<GameBoard> {
             child: SizedBox(
                 width: W - pad * htile,
                 height: htile,
-//                child: Material(
                 child: Container(
                     margin: const EdgeInsets.all(10.0),
-//                    padding: const EdgeInsets.all(3.0),
                     decoration: BoxDecoration(
                         border: Border.all(color: Colors.blueAccent)
                     ),
                     child: LinearProgressIndicator(
                       value: S,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.lightGreenAccent),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.lightGreenAccent),
                       backgroundColor: Colors.white,
                     ))));
         tilesW = t;
         return Stack(children: tilesW);
-      })),
-    );
+      }),
+    ));
   }
 }

@@ -2,14 +2,14 @@ import 'dart:math';
 
 Map<String,int> makeHomonyms(
     List<List<String>> homonyms_,
-    Map<String,int> H
+    Map<String,int>? H
     ) {
   H ??= <String,int>{};
   if(homonyms_.isEmpty) return H;
-  var homonyms = List<List<String>>();
+  var homonyms = <List<String>>[];
   H.forEach((k,v) {
     while(homonyms.length<=v) {
-      homonyms.add(List<String>.filled(, ""));
+      homonyms.add(<String>[]);
     }
     homonyms[v].add(k);
   });
@@ -23,9 +23,10 @@ Map<String,int> makeHomonyms(
     mods.add(b);
     for (var x in h) {
       if(H.containsKey(x)) {
-        if(H[x]!=b) {
-          mods.add(max(b,H[x]));
-          b = min(b,H[x]);
+        final hx = H[x]!;
+        if(hx!=b) {
+          mods.add(max(b,hx));
+          b = min(b,hx);
         }
       }
     }
@@ -39,7 +40,7 @@ Map<String,int> makeHomonyms(
 }
 
 Map<String,dynamic> fixprobset2(Map<String,dynamic> P,
-    {Map<String,int> homonyms }) {
+    {Map<String,int>? homonyms }) {
   var foo = Map<String,dynamic>.from(P);
   if(!foo.containsKey("name")) {
     foo["name"] = ((foo["spelling"] ?? foo["tileset"]) as List).join(" ");
@@ -47,10 +48,10 @@ Map<String,dynamic> fixprobset2(Map<String,dynamic> P,
   if(foo.containsKey("tileset") && !foo.containsKey("hints")) {
     foo["hints"] = foo["tileset"];
   }
-  var baz = List<List<String>>();
+  var baz = <List<String>>[];
   var boo = foo["homonyms"] ?? [];
   for(var k=0;k<boo.length;k++) {
-    var bak = List<String>.filled(, "");
+    var bak = <String>[];
     bak.addAll(boo[k].cast<String>());
     baz.add(bak);
   }
