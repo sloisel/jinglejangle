@@ -137,6 +137,7 @@ var say = Speaker();
 
 class SoundFX {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer2 = AudioPlayer();
   bool _initialized = false;
 
   Future<void> init() async {
@@ -145,6 +146,7 @@ class SoundFX {
 
     // Set audio mode for iOS
     await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+    await _audioPlayer2.setReleaseMode(ReleaseMode.stop);
   }
 
   Future<void> play(String filename, {double volume = 1.0}) async {
@@ -158,14 +160,27 @@ class SoundFX {
     }
   }
 
+  Future<void> play2(String filename, {double volume = 1.0}) async {
+    await init();
+    try {
+      await _audioPlayer2.stop();
+      await _audioPlayer2.setVolume(volume);
+      await _audioPlayer2.play(AssetSource(filename));
+    } catch (e) {
+      print('Error playing audio $filename: $e');
+    }
+  }
+
   Future<void> stop() async {
     await _audioPlayer.stop();
   }
 
   void dispose() {
     _audioPlayer.dispose();
+    _audioPlayer2.dispose();
   }
 }
 
 var player = SoundFX();
+var player2 = SoundFX();
 

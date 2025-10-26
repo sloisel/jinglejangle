@@ -73,7 +73,7 @@ class SpellingState extends State<Spelling> {
       say('$question.',language:language);
     } else {
       player.play('SMALL_CROWD_APPLAUSE-Yannick_Lemieux-recompressed.mp3',volume: 0.2);
-      player.play('joy.mp3',volume: 0.2);
+      player2.play('joy.mp3',volume: 0.2);
       finaltimer = Timer(const Duration(milliseconds: 500), () {
         Navigator.popAndPushNamed(context, "/Win");
       });
