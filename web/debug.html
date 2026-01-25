@@ -12,6 +12,14 @@
 </head>
 <body>
   <h1>Service Worker & Cache Debug</h1>
+  <p id="swstatus">Checking SW control...</p>
+  <script>
+    if (navigator.serviceWorker.controller) {
+      document.getElementById('swstatus').textContent = 'SW controlling this page: ' + navigator.serviceWorker.controller.scriptURL;
+    } else {
+      document.getElementById('swstatus').textContent = 'NO service worker controlling this page!';
+    }
+  </script>
 
   <button onclick="checkSW()">Check Service Worker</button>
   <button onclick="registerSW()">Register Service Worker</button>
@@ -203,33 +211,46 @@
     }
 
     async function testFont() {
-      out.textContent = 'Testing font fetch and cache...\n';
+      out.textContent = 'Testing font loading like Flutter does...\n';
 
-      const urls = [
-        'assets/fonts/ackaisyo.ttf',
-        './assets/fonts/ackaisyo.ttf',
-        '/jinglejangle/assets/fonts/ackaisyo.ttf',
-        location.origin + '/jinglejangle/assets/fonts/ackaisyo.ttf'
-      ];
-
-      for (const url of urls) {
-        out.textContent += `\nTrying: ${url}\n`;
-        try {
-          const resp = await fetch(url);
-          out.textContent += `  Fetch: ${resp.status} ${resp.ok ? 'OK' : 'FAIL'}\n`;
-        } catch (e) {
-          out.textContent += `  Fetch error: ${e.message}\n`;
-        }
-
-        // Try direct cache match
-        try {
-          const cache = await caches.open('flutter-app-cache');
-          const cached = await cache.match(url);
-          out.textContent += `  Cache: ${cached ? 'HIT' : 'MISS'}\n`;
-        } catch (e) {
-          out.textContent += `  Cache error: ${e.message}\n`;
-        }
+      // Test 1: Simple fetch
+      out.textContent += '\n1. Simple fetch:\n';
+      try {
+        const resp = await fetch('assets/fonts/ackaisyo.ttf');
+        out.textContent += `   Status: ${resp.status}\n`;
+      } catch (e) {
+        out.textContent += `   Error: ${e.message}\n`;
       }
+
+      // Test 2: Load as FontFace (how browsers actually load fonts)
+      out.textContent += '\n2. FontFace API:\n';
+      try {
+        const font = new FontFace('TestKaisyo', 'url(assets/fonts/ackaisyo.ttf)');
+        await font.load();
+        document.fonts.add(font);
+        out.textContent += '   FontFace loaded OK!\n';
+      } catch (e) {
+        out.textContent += `   FontFace error: ${e.message}\n`;
+      }
+
+      // Test 3: Test audio element (how audioplayers works)
+      out.textContent += '\n3. Audio element:\n';
+      try {
+        const audio = document.createElement('audio');
+        audio.src = 'assets/assets/marina/0.mp3';
+        await new Promise((resolve, reject) => {
+          audio.oncanplaythrough = resolve;
+          audio.onerror = () => reject(new Error('Audio load failed: ' + audio.error?.message));
+          setTimeout(() => reject(new Error('Audio load timeout')), 5000);
+        });
+        out.textContent += '   Audio loaded OK!\n';
+        audio.play().catch(e => {}); // Try to play
+      } catch (e) {
+        out.textContent += `   Audio error: ${e.message}\n`;
+      }
+
+      // Test 4: Check what's online/offline
+      out.textContent += '\n4. Network status: ' + (navigator.onLine ? 'ONLINE' : 'OFFLINE') + '\n';
     }
   </script>
 </body>
