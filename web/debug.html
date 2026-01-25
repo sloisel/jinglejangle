@@ -14,6 +14,7 @@
   <h1>Service Worker & Cache Debug</h1>
 
   <button onclick="checkSW()">Check Service Worker</button>
+  <button onclick="registerSW()">Register Service Worker</button>
   <button onclick="listCache()">List Cached Files</button>
   <button onclick="testAudio()">Test Audio Fetch</button>
   <button onclick="testFont()">Test Font Fetch</button>
@@ -22,6 +23,35 @@
 
   <script>
     const out = document.getElementById('output');
+
+    async function registerSW() {
+      out.textContent = 'Attempting to register service worker...\n';
+
+      if (!('serviceWorker' in navigator)) {
+        out.textContent += 'Service Worker NOT supported!\n';
+        return;
+      }
+
+      try {
+        const reg = await navigator.serviceWorker.register('flutter_service_worker.js');
+        out.textContent += 'Registration successful!\n';
+        out.textContent += `Scope: ${reg.scope}\n`;
+        out.textContent += `Active: ${reg.active ? reg.active.state : 'none'}\n`;
+        out.textContent += `Waiting: ${reg.waiting ? reg.waiting.state : 'none'}\n`;
+        out.textContent += `Installing: ${reg.installing ? reg.installing.state : 'none'}\n`;
+
+        // Listen for state changes
+        if (reg.installing) {
+          reg.installing.addEventListener('statechange', (e) => {
+            out.textContent += `\nState changed to: ${e.target.state}\n`;
+          });
+        }
+      } catch (e) {
+        out.textContent += `Registration FAILED: ${e}\n`;
+        out.textContent += `Error name: ${e.name}\n`;
+        out.textContent += `Error message: ${e.message}\n`;
+      }
+    }
 
     async function checkSW() {
       out.textContent = 'Checking service worker...\n';
