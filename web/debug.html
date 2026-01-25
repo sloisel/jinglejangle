@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cache Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+    #output { white-space: pre-wrap; background: #f0f0f0; padding: 10px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Service Worker & Cache Debug</h1>
+
+  <button onclick="checkSW()">Check Service Worker</button>
+  <button onclick="listCache()">List Cached Files</button>
+  <button onclick="testAudio()">Test Audio Fetch</button>
+  <button onclick="testFont()">Test Font Fetch</button>
+
+  <div id="output">Click a button to test...</div>
+
+  <script>
+    const out = document.getElementById('output');
+
+    async function checkSW() {
+      out.textContent = 'Checking service worker...\n';
+
+      if (!('serviceWorker' in navigator)) {
+        out.textContent += 'Service Worker NOT supported!\n';
+        return;
+      }
+
+      const regs = await navigator.serviceWorker.getRegistrations();
+      out.textContent += `Registrations: ${regs.length}\n`;
+
+      for (const reg of regs) {
+        out.textContent += `\nScope: ${reg.scope}\n`;
+        out.textContent += `Active: ${reg.active ? reg.active.state : 'none'}\n`;
+        out.textContent += `Waiting: ${reg.waiting ? reg.waiting.state : 'none'}\n`;
+        out.textContent += `Installing: ${reg.installing ? reg.installing.state : 'none'}\n`;
+      }
+    }
+
+    async function listCache() {
+      out.textContent = 'Listing caches...\n';
+
+      const cacheNames = await caches.keys();
+      out.textContent += `Cache names: ${cacheNames.join(', ')}\n\n`;
+
+      for (const name of cacheNames) {
+        const cache = await caches.open(name);
+        const keys = await cache.keys();
+        out.textContent += `\n${name}: ${keys.length} items\n`;
+
+        // Show first 20 and count by type
+        const mp3s = keys.filter(k => k.url.includes('.mp3'));
+        const fonts = keys.filter(k => k.url.includes('.ttf') || k.url.includes('.otf'));
+
+        out.textContent += `  MP3 files: ${mp3s.length}\n`;
+        out.textContent += `  Font files: ${fonts.length}\n`;
+        out.textContent += `  Sample URLs:\n`;
+        keys.slice(0, 10).forEach(k => {
+          out.textContent += `    ${k.url.split('/jinglejangle/')[1] || k.url}\n`;
+        });
+      }
+    }
+
+    async function testAudio() {
+      const url = 'assets/assets/marina/0.mp3';
+      out.textContent = `Testing fetch: ${url}\n`;
+
+      try {
+        const resp = await fetch(url);
+        out.textContent += `Status: ${resp.status}\n`;
+        out.textContent += `From cache: ${resp.headers.get('x-from-cache') || 'unknown'}\n`;
+        out.textContent += `Content-Type: ${resp.headers.get('content-type')}\n`;
+        out.textContent += `Content-Length: ${resp.headers.get('content-length')}\n`;
+
+        // Try to play it
+        const blob = await resp.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play().then(() => {
+          out.textContent += 'Audio played successfully!\n';
+        }).catch(e => {
+          out.textContent += `Audio play error: ${e}\n`;
+        });
+      } catch (e) {
+        out.textContent += `Fetch error: ${e}\n`;
+      }
+    }
+
+    async function testFont() {
+      const url = 'assets/fonts/ackaisyo.ttf';
+      out.textContent = `Testing fetch: ${url}\n`;
+
+      try {
+        const resp = await fetch(url);
+        out.textContent += `Status: ${resp.status}\n`;
+        out.textContent += `Content-Type: ${resp.headers.get('content-type')}\n`;
+        out.textContent += `Content-Length: ${resp.headers.get('content-length')}\n`;
+      } catch (e) {
+        out.textContent += `Fetch error: ${e}\n`;
+      }
+    }
+  </script>
+</body>
+</html>
