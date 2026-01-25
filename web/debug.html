@@ -15,7 +15,10 @@
 
   <button onclick="checkSW()">Check Service Worker</button>
   <button onclick="registerSW()">Register Service Worker</button>
+  <button onclick="unregisterSW()">Unregister All</button>
   <button onclick="listCache()">List Cached Files</button>
+  <button onclick="testAssets()">Test Asset Fetches</button>
+  <button onclick="testFullCache()">Test Full Cache (145 assets)</button>
   <button onclick="testAudio()">Test Audio Fetch</button>
   <button onclick="testFont()">Test Font Fetch</button>
 
@@ -23,6 +26,16 @@
 
   <script>
     const out = document.getElementById('output');
+
+    async function unregisterSW() {
+      out.textContent = 'Unregistering all service workers...\n';
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+        out.textContent += `Unregistered: ${reg.scope}\n`;
+      }
+      out.textContent += 'Done. Reload the main app to test without service worker.\n';
+    }
 
     async function registerSW() {
       out.textContent = 'Attempting to register service worker...\n';
@@ -102,17 +115,63 @@
         const keys = await cache.keys();
         out.textContent += `\n${name}: ${keys.length} items\n`;
 
-        // Show first 20 and count by type
+        // Show first 30 URLs
+        out.textContent += `  Sample URLs:\n`;
+        keys.slice(0, 30).forEach(k => {
+          out.textContent += `    ${k.url}\n`;
+        });
+
+        // Count by type
         const mp3s = keys.filter(k => k.url.includes('.mp3'));
         const fonts = keys.filter(k => k.url.includes('.ttf') || k.url.includes('.otf'));
-
-        out.textContent += `  MP3 files: ${mp3s.length}\n`;
+        out.textContent += `\n  MP3 files: ${mp3s.length}\n`;
         out.textContent += `  Font files: ${fonts.length}\n`;
-        out.textContent += `  Sample URLs:\n`;
-        keys.slice(0, 10).forEach(k => {
-          out.textContent += `    ${k.url.split('/jinglejangle/')[1] || k.url}\n`;
-        });
       }
+    }
+
+    async function testAssets() {
+      out.textContent = 'Testing asset fetches...\n';
+
+      const testUrls = [
+        'main.dart.js',
+        'flutter.js',
+        'index.html',
+        '/',
+        'manifest.json',
+        'assets/FontManifest.json',
+        'assets/AssetManifest.bin.json',
+        'assets/fonts/ackaisyo.ttf',
+        'assets/assets/marina/0.mp3',
+        'assets/assets/problemset.json',
+        'canvaskit/canvaskit.js',
+        'canvaskit/canvaskit.wasm',
+      ];
+
+      for (const url of testUrls) {
+        try {
+          const resp = await fetch(url, {cache: 'reload'});
+          if (resp.ok) {
+            out.textContent += `✓ ${url} (${resp.status})\n`;
+          } else {
+            out.textContent += `✗ ${url} (${resp.status} ${resp.statusText})\n`;
+          }
+        } catch (e) {
+          out.textContent += `✗ ${url} (ERROR: ${e.message})\n`;
+        }
+      }
+
+      out.textContent += '\nNow testing cache.addAll simulation...\n';
+
+      try {
+        const cache = await caches.open('test-cache');
+        await cache.addAll(testUrls.map(u => new Request(u, {cache: 'reload'})));
+        out.textContent += '✓ cache.addAll succeeded!\n';
+        await caches.delete('test-cache');
+      } catch (e) {
+        out.textContent += `✗ cache.addAll FAILED: ${e.message}\n`;
+      }
+
+      out.textContent += '\nDone testing assets.\n';
     }
 
     async function testAudio() {

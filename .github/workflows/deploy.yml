@@ -32,28 +32,41 @@ jobs:
       - name: Build web
         run: flutter build web --base-href=/jinglejangle/ --pwa-strategy=offline-first
 
-      - name: Patch service worker to precache all assets
+      - name: Patch service worker to precache all assets in batches
         run: |
           node -e "
           const fs = require('fs');
           const file = 'build/web/flutter_service_worker.js';
           let content = fs.readFileSync(file, 'utf8');
 
-          // Extract all asset keys from RESOURCES object
-          const resourcesMatch = content.match(/const RESOURCES = \{([^}]+)\}/s);
-          if (resourcesMatch) {
-            const keys = resourcesMatch[1].match(/\"[^\"]+\":/g).map(k => k.slice(1, -2));
-            const allAssets = JSON.stringify(keys);
+          // Replace the install handler to cache all RESOURCES in batches
+          const newInstall = \`
+          self.addEventListener('install', (event) => {
+            self.skipWaiting();
+            return event.waitUntil((async () => {
+              const cache = await caches.open(TEMP);
+              const keys = Object.keys(RESOURCES);
+              const batchSize = 20;
+              for (let i = 0; i < keys.length; i += batchSize) {
+                const batch = keys.slice(i, i + batchSize);
+                await Promise.all(batch.map(async (key) => {
+                  try {
+                    const req = new Request(key, {cache: 'reload'});
+                    const resp = await fetch(req);
+                    if (resp.ok) await cache.put(req, resp);
+                  } catch (e) { console.warn('Failed to cache:', key, e); }
+                }));
+              }
+            })());
+          });\`;
 
-            // Replace CORE array with all assets
-            content = content.replace(
-              /const CORE = \[[^\]]*\];/,
-              'const CORE = ' + allAssets + ';'
-            );
+          content = content.replace(
+            /self\\.addEventListener\\(\"install\"[\\s\\S]*?\\}\\);/,
+            newInstall
+          );
 
-            fs.writeFileSync(file, content);
-            console.log('Patched service worker to precache ' + keys.length + ' assets');
-          }
+          fs.writeFileSync(file, content);
+          console.log('Patched service worker with batched caching');
           "
 
       - name: Upload artifact
