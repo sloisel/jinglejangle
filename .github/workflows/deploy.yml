@@ -65,8 +65,14 @@ jobs:
             newInstall
           );
 
+          // Fix fetch handler: strip base-href prefix from key
+          content = content.replace(
+            'var key = event.request.url.substring(origin.length + 1);',
+            \"var key = event.request.url.substring(origin.length + 1);\\n  if (key.startsWith('jinglejangle/')) key = key.substring('jinglejangle/'.length);\"
+          );
+
           fs.writeFileSync(file, content);
-          console.log('Patched service worker with batched caching');
+          console.log('Patched service worker with batched caching and base-href fix');
           "
 
       - name: Upload artifact
