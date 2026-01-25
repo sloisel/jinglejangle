@@ -203,16 +203,32 @@
     }
 
     async function testFont() {
-      const url = 'assets/fonts/ackaisyo.ttf';
-      out.textContent = `Testing fetch: ${url}\n`;
+      out.textContent = 'Testing font fetch and cache...\n';
 
-      try {
-        const resp = await fetch(url);
-        out.textContent += `Status: ${resp.status}\n`;
-        out.textContent += `Content-Type: ${resp.headers.get('content-type')}\n`;
-        out.textContent += `Content-Length: ${resp.headers.get('content-length')}\n`;
-      } catch (e) {
-        out.textContent += `Fetch error: ${e}\n`;
+      const urls = [
+        'assets/fonts/ackaisyo.ttf',
+        './assets/fonts/ackaisyo.ttf',
+        '/jinglejangle/assets/fonts/ackaisyo.ttf',
+        location.origin + '/jinglejangle/assets/fonts/ackaisyo.ttf'
+      ];
+
+      for (const url of urls) {
+        out.textContent += `\nTrying: ${url}\n`;
+        try {
+          const resp = await fetch(url);
+          out.textContent += `  Fetch: ${resp.status} ${resp.ok ? 'OK' : 'FAIL'}\n`;
+        } catch (e) {
+          out.textContent += `  Fetch error: ${e.message}\n`;
+        }
+
+        // Try direct cache match
+        try {
+          const cache = await caches.open('flutter-app-cache');
+          const cached = await cache.match(url);
+          out.textContent += `  Cache: ${cached ? 'HIT' : 'MISS'}\n`;
+        } catch (e) {
+          out.textContent += `  Cache error: ${e.message}\n`;
+        }
       }
     }
   </script>
