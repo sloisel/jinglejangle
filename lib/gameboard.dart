@@ -21,7 +21,7 @@ Widget makeButton({
   double marginTop = 5,
   double marginBottom = 5,
   Color color = Colors.grey,
-  String fontFamily = "Roboto"
+  String fontFamily = "NotoSansJP"
 }) {
   return Positioned(
       left: x + marginLeft,

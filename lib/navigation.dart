@@ -82,7 +82,7 @@ class PreGameState extends State<PreGame> {
               tileset[k],
               presetFontSizes: textsizes,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontFamily: "Roboto"),
+              style: const TextStyle(fontFamily: "NotoSansJP"),
             ),
           ));
     }

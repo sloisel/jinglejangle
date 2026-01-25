@@ -65,7 +65,7 @@ Map<String,dynamic> fixprobset2(Map<String,dynamic> P,
   if(foo.containsKey("children")) {
     var Q = List<Map<String,dynamic>>.from(foo["children"]);
     for(var k=0; k<Q.length;k++) {
-      copyOption(foo,Q[k],"fontChoices",["Roboto"]);
+      copyOption(foo,Q[k],"fontChoices",["NotoSansJP"]);
       copyOption(foo,Q[k],"keyboard",["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"]);
       copyOption(foo,Q[k],"titleHint",false);
       copyOption(foo,Q[k],"maxtime",15);

@@ -1,7 +1,7 @@
 {"name": "Jingle Jangle" ,
   "children": [
     { "name": "Hiragana",
-      "fontChoices": ["Roboto","Gyosyo"],
+      "fontChoices": ["NotoSansJP","Gyosyo"],
       "homonyms": [["じ","ぢ","ジ","ビ"],
         ["ず","づ","ズ","ヅ"]],
       "children": [ { "name": "Basic Hiragana" },
@@ -79,7 +79,7 @@
     },
     {
       "name": "Katakana",
-      "fontChoices": ["Roboto","Gyosyo"],
+      "fontChoices": ["NotoSansJP","Gyosyo"],
       "homonyms": [
         ["じ", "ぢ", "ジ", "ビ"],
         ["ず", "づ", "ズ", "ヅ"]

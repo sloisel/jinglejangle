@@ -37,6 +37,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Jingle Jangle',
+      theme: ThemeData(
+        fontFamily: 'NotoSansJP',
+      ),
       initialRoute: '/',
       routes: {
 //        '/': (context) => const Spelling(),

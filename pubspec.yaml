@@ -70,6 +70,9 @@ flutter:
     - family: Kaisyo
       fonts:
         - asset: fonts/ackaisyo.ttf
+    - family: NotoSansJP
+      fonts:
+        - asset: fonts/NotoSansCJKjp-Regular.otf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
