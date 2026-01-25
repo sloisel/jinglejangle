@@ -32,6 +32,30 @@ jobs:
       - name: Build web
         run: flutter build web --base-href=/jinglejangle/ --pwa-strategy=offline-first
 
+      - name: Patch service worker to precache all assets
+        run: |
+          node -e "
+          const fs = require('fs');
+          const file = 'build/web/flutter_service_worker.js';
+          let content = fs.readFileSync(file, 'utf8');
+
+          // Extract all asset keys from RESOURCES object
+          const resourcesMatch = content.match(/const RESOURCES = \{([^}]+)\}/s);
+          if (resourcesMatch) {
+            const keys = resourcesMatch[1].match(/\"[^\"]+\":/g).map(k => k.slice(1, -2));
+            const allAssets = JSON.stringify(keys);
+
+            // Replace CORE array with all assets
+            content = content.replace(
+              /const CORE = \[[^\]]*\];/,
+              'const CORE = ' + allAssets + ';'
+            );
+
+            fs.writeFileSync(file, content);
+            console.log('Patched service worker to precache ' + keys.length + ' assets');
+          }
+          "
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
