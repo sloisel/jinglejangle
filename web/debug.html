@@ -34,18 +34,37 @@
 
       try {
         const reg = await navigator.serviceWorker.register('flutter_service_worker.js');
-        out.textContent += 'Registration successful!\n';
+        out.textContent += 'Registration returned!\n';
         out.textContent += `Scope: ${reg.scope}\n`;
         out.textContent += `Active: ${reg.active ? reg.active.state : 'none'}\n`;
         out.textContent += `Waiting: ${reg.waiting ? reg.waiting.state : 'none'}\n`;
         out.textContent += `Installing: ${reg.installing ? reg.installing.state : 'none'}\n`;
 
+        // Check registrations immediately
+        const regs = await navigator.serviceWorker.getRegistrations();
+        out.textContent += `\nRegistrations count immediately after: ${regs.length}\n`;
+
         // Listen for state changes
-        if (reg.installing) {
-          reg.installing.addEventListener('statechange', (e) => {
-            out.textContent += `\nState changed to: ${e.target.state}\n`;
+        const worker = reg.installing || reg.waiting || reg.active;
+        if (worker) {
+          out.textContent += `\nWatching worker in state: ${worker.state}\n`;
+          worker.addEventListener('statechange', (e) => {
+            out.textContent += `State changed to: ${e.target.state}\n`;
+          });
+          worker.addEventListener('error', (e) => {
+            out.textContent += `Worker ERROR: ${e.message}\n`;
           });
         }
+
+        // Wait a second and check again
+        setTimeout(async () => {
+          const regs2 = await navigator.serviceWorker.getRegistrations();
+          out.textContent += `\nRegistrations after 1 second: ${regs2.length}\n`;
+          if (regs2.length === 0) {
+            out.textContent += 'Service worker was UNREGISTERED!\n';
+          }
+        }, 1000);
+
       } catch (e) {
         out.textContent += `Registration FAILED: ${e}\n`;
         out.textContent += `Error name: ${e.name}\n`;
