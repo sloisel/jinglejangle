@@ -126,6 +126,10 @@
         const fonts = keys.filter(k => k.url.includes('.ttf') || k.url.includes('.otf'));
         out.textContent += `\n  MP3 files: ${mp3s.length}\n`;
         out.textContent += `  Font files: ${fonts.length}\n`;
+        out.textContent += `  Font URLs:\n`;
+        fonts.forEach(k => {
+          out.textContent += `    ${k.url}\n`;
+        });
       }
     }
 
