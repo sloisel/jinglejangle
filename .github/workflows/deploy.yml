@@ -32,56 +32,51 @@ jobs:
       - name: Build web
         run: flutter build web --base-href=/jinglejangle/ --pwa-strategy=offline-first
 
-      - name: Patch service worker to precache all assets in batches
+      - name: Install custom service worker
         run: |
           node -e "
           const fs = require('fs');
-          const file = 'build/web/flutter_service_worker.js';
-          let content = fs.readFileSync(file, 'utf8');
 
-          // Replace the install handler to cache all RESOURCES in batches
-          const newInstall = \`
-          self.addEventListener('install', (event) => {
-            self.skipWaiting();
-            return event.waitUntil((async () => {
-              const cache = await caches.open(TEMP);
-              const keys = Object.keys(RESOURCES);
-              const batchSize = 20;
-              for (let i = 0; i < keys.length; i += batchSize) {
-                const batch = keys.slice(i, i + batchSize);
-                await Promise.all(batch.map(async (key) => {
-                  try {
-                    const req = new Request(key, {cache: 'reload'});
-                    const resp = await fetch(req);
-                    if (resp.ok) await cache.put(req, resp);
-                  } catch (e) { console.warn('Failed to cache:', key, e); }
-                }));
+          // Extract RESOURCES map from Flutter's generated service worker
+          const generated = fs.readFileSync('build/web/flutter_service_worker.js', 'utf8');
+          // Try to extract RESOURCES from the generated file; if not found,
+          // build it from the asset manifest
+          let resources = '{}';
+          const match = generated.match(/const RESOURCES = ({[\s\S]*?});/);
+          if (match) {
+            resources = match[1];
+          } else {
+            // Flutter didn't generate a RESOURCES map; build one from the files
+            const path = require('path');
+            const crypto = require('crypto');
+            const buildDir = 'build/web';
+            function walk(dir) {
+              let results = {};
+              for (const f of fs.readdirSync(dir, {withFileTypes: true})) {
+                const full = path.join(dir, f.name);
+                if (f.isDirectory()) {
+                  Object.assign(results, walk(full));
+                } else {
+                  const rel = path.relative(buildDir, full);
+                  const hash = crypto.createHash('md5').update(fs.readFileSync(full)).digest('hex');
+                  results[rel] = hash;
+                }
               }
-            })());
-          });\`;
+              return results;
+            }
+            const res = walk(buildDir);
+            // Add '/' as alias for index.html
+            if (res['index.html']) res['/'] = res['index.html'];
+            resources = JSON.stringify(res);
+          }
 
-          content = content.replace(
-            /self\\.addEventListener\\(\"install\"[\\s\\S]*?\\}\\);/,
-            newInstall
-          );
+          // Read our custom service worker template and inject RESOURCES
+          let sw = fs.readFileSync('web/custom_service_worker.js', 'utf8');
+          sw = sw.replace('__RESOURCES__', resources);
+          fs.writeFileSync('build/web/flutter_service_worker.js', sw);
+          console.log('Installed custom service worker');
 
-          // Fix fetch handler: strip base-href prefix from key
-          content = content.replace(
-            'var key = event.request.url.substring(origin.length + 1);',
-            \"var key = event.request.url.substring(origin.length + 1);\\n  if (key.startsWith('jinglejangle/')) key = key.substring('jinglejangle/'.length);\"
-          );
-
-          // Switch index.html from online-first to cache-first to avoid
-          // hanging on slow/flaky connections (lie-fi)
-          content = content.replace(
-            /\\/\\/ If the URL is the index\\.html.*?return onlineFirst\\(event\\);\\s*\\}/s,
-            '// Serve everything cache-first, including index.html.'
-          );
-
-          fs.writeFileSync(file, content);
-          console.log('Patched service worker with batched caching and base-href fix');
-
-          // Also patch flutter_bootstrap.js to use local CanvasKit instead of CDN
+          // Patch flutter_bootstrap.js to use local CanvasKit instead of CDN
           const bootstrap = 'build/web/flutter_bootstrap.js';
           let bsContent = fs.readFileSync(bootstrap, 'utf8');
           bsContent = bsContent.replace(
