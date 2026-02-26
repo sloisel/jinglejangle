@@ -71,6 +71,13 @@ jobs:
             \"var key = event.request.url.substring(origin.length + 1);\\n  if (key.startsWith('jinglejangle/')) key = key.substring('jinglejangle/'.length);\"
           );
 
+          // Switch index.html from online-first to cache-first to avoid
+          // hanging on slow/flaky connections (lie-fi)
+          content = content.replace(
+            /\\/\\/ If the URL is the index\\.html.*?return onlineFirst\\(event\\);\\s*\\}/s,
+            '// Serve everything cache-first, including index.html.'
+          );
+
           fs.writeFileSync(file, content);
           console.log('Patched service worker with batched caching and base-href fix');
 
