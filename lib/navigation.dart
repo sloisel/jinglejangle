@@ -82,7 +82,7 @@ class PreGameState extends State<PreGame> {
               tileset[k],
               presetFontSizes: textsizes,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontFamily: "NotoSansJP"),
+              style: TextStyle(fontFamily: fc[fontChoice]),
             ),
           ));
     }
@@ -98,7 +98,7 @@ class PreGameState extends State<PreGame> {
         backgroundColor: Colors.green,
         child: const Icon(Icons.arrow_forward_ios),
       ),
-      bottomNavigationBar: L.isNotEmpty?BottomAppBar(child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: L))):null,
+      bottomNavigationBar: L.isNotEmpty?SizedBox(height: 72.0 * L.length, child: BottomAppBar(child: Column(mainAxisSize: MainAxisSize.min, children: L))):null,
     ));
   }
 }
